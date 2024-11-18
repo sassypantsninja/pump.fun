@@ -1,0 +1,52 @@
+use solana_program::{
+    account_info::{next_account_info, AccountInfo},
+    entrypoint,
+    entrypoint::ProgramResult,
+    pubkey::Pubkey,
+    msg,
+    program_error::ProgramError,
+    program_pack::{Pack, IsInitialized},
+    sysvar::{rent::Rent, Sysvar},
+};
+use spl_token::{
+    instruction::{initialize_mint, mint_to},
+    state::Mint,
+};
+
+// Entrypoint for the program
+entrypoint!(process_instruction);
+
+fn process_instruction(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    _instruction_data: &[u8],
+) -> ProgramResult {
+    let account_info_iter = &mut accounts.iter();
+    let mint_account = next_account_info(account_info_iter)?;
+    let rent_account = next_account_info(account_info_iter)?;
+    let owner_account = next_account_info(account_info_iter)?;
+
+    // Log a message for feedback
+    msg!("Creating a new token...");
+
+    // Initialize the mint for the token (assuming SPL standard)
+    initialize_mint(
+        &spl_token::ID,
+        mint_account.key,
+        owner_account.key,
+        Some(owner_account.key), // Freeze authority
+        9, // Decimal places (e.g., 9 for 1 token to 1 billion "smallest" units)
+    )?;
+
+    // Mint an initial supply (example)
+    mint_to(
+        &spl_token::ID,
+        mint_account.key,
+        owner_account.key,
+        owner_account.key,
+        &[],
+        1_000_000_000, // Initial token supply
+    )?;
+
+    Ok(())
+}
